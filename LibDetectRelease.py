@@ -114,49 +114,24 @@ def LibSeatDetect(UN, PW, textdate, Libname="ShenZhen",
     failCount = 0
 
     while 1:
-
         failCount += 1
-        # print('现在' + Libname + '图书馆有预约名额吗？')
-        date = datetime.datetime.now()
-        dateText = str(date.year) + r'-' + str(date.month) + r'-' + str(date.day) + r'-' + str(
-            date.hour) + ':' + str(
-            date.minute) + ':' + str(date.second)
-        # print(dateText)
-        print("\n" + drive.find_element_by_xpath("//span[contains(text()," + textdate + ")]/following-sibling::a").text)
-        print(textdate)
+        """检测当前监控的位置是否可以预约"""
         if not drive.find_element_by_xpath(
                 "//span[contains(text()," + textdate + ")]/following-sibling::a").text == u"去预约" in drive.page_source:
             pass
-            # print('\033[31m没有')
-            # print('\033[30m')
         else:
-            temp1 = drive.find_element_by_xpath("//span[contains(text()," + textdate + ")]/following-sibling::a").text
-            if temp1 == u'去预约':
-                pass
-            else:
-                continue
-            # def BeepTimes(times):
-            #    for _ in range(times):
-            #        for _ in range(4):
-            #            winsound.Beep(4000,50)
-            #            time.sleep(0.02)
-
-            # b = Process(target=BeepTimes,args=(5,))
-            # b.start()
-
             print('\033[32m有空位[30m')
-            failCount = 0
             date = datetime.datetime.now()
             dateText = str(date.year) + r'-' + str(date.month) + r'-' + str(date.day) + r'-' + str(
                 date.hour) + ':' + str(
                 date.minute) + ':' + str(date.second)
             print(dateText)
-            # drive.find_element_by_class_name(".comment_score.gotoyy").click()
+            """进入预约界面"""
             yuyue = drive.find_element_by_css_selector("[class='comment_score gotoyy']")
             drive.execute_script("arguments[0].scrollIntoView();", yuyue)
             yuyue.click()
+            """检测是否需要填写健康信息"""
             if u"请填写您的健康信息" in drive.page_source:
-                print("准备打勾")
                 drive.find_element_by_xpath(
                     "/html/body/div[1]/div[2]/div[2]/form/div/div/div/div/div[1]/div[2]/input[2]").click()
                 time.sleep(1)
@@ -166,25 +141,25 @@ def LibSeatDetect(UN, PW, textdate, Libname="ShenZhen",
                 if not known.is_selected():
                     known.click()
                 drive.find_element_by_class_name("page_btn").click()
-            time.sleep(1)
+            """进入预约信息填写界面"""
             drive.find_element_by_id("getCheckCode").click()
+            """在预约前发送邮件通知"""
             if not SentEmail:
-                SentEmail = True
                 try:
                     sendAnEmail(dateText, textdate, Libname)
                 except:
                     print("发送邮件失败，跳过")
                     pass
+            """跳出验证码填写界面"""
             app = MyCollectApp()
             app.mainloop()
             print(VarValue)
+            """请求验证码"""
             drive.find_element_by_css_selector("[class='input w_small required']").click()
             drive.find_element_by_css_selector("[name='applyCheckCode']").send_keys(VarValue)
             drive.find_element_by_css_selector("[class='submit btn_2']").click()
-            # drive.find_element_by_name("applyCheckCode").send_keys(VarValue)
-            # drive.find_element_by_class_name("submit btn_2").click()
-
             break
+        """隔一段时间再刷新"""
         if failCount < 10:
             for i in range(1, 6):
                 time.sleep(1)
@@ -208,7 +183,6 @@ def LibSeatDetect(UN, PW, textdate, Libname="ShenZhen",
 
 if __name__ == '__main__':
     VarValue = ''
-    # 无icon，采用python的icon，且采用自己的线程
     toaster.show_toast("Python Script Running",
                        "Script screening library seat is running",
                        icon_path=None,
