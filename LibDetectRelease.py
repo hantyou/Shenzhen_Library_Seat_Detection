@@ -16,17 +16,16 @@ from multiprocessing import Process
 toaster = ToastNotifier()
 # 用于构建邮件头
 VarValue = ''
-print("程序准备中")
 
-def sendAnEmail(dateText, libname='ShenZhen'):
+
+def sendAnEmail(dateText, textdate, libname='ShenZhen'):
     print('正在发送邮件')
-    print('邮件内容如下')
     from_addr = ''
     password = ''
     to_addr = ''
     smtp_server = ''
 
-    text = dateText + 'A seat is available in ' + libname + 'library.'
+    text = dateText + 'A seat is available in ' + libname + ' library on' + textdate + '.'
     print(text)
     msg = MIMEText(text, 'plain', 'utf-8')
 
@@ -35,6 +34,7 @@ def sendAnEmail(dateText, libname='ShenZhen'):
     msg['Subject'] = Header('Available Seat in ' + libname + ' Library')
 
     server = smtplib.SMTP_SSL(host=smtp_server)
+    server.quit()
     server.connect(smtp_server, 465)
     # 登录发信邮箱
     server.login(from_addr, password)
@@ -76,10 +76,10 @@ class MyCollectApp(tk.Toplevel):  # 重点
         self.destroy()
 
 
-def LibSeatDetect(UN, PW, Libname="ShenZhen",
+def LibSeatDetect(UN, PW, textdate, Libname="ShenZhen",
                   webSite="https://www.szlib.org.cn/m/login.html?formalurl=https%3A%2F%2Fwww.szlib.org.cn%2Fm%2Fmylibrary%2Factivity_appt.jsp%3FcategoryId%3D81"):
     # 配置文件地址
-    print(Libname + "图书馆的位置检测已经开始，正在连接网页")
+    print(Libname + "图书馆的位置检测已经开始")
     global VarValue
     toaster.show_toast("LibDectec Running of " + Libname + "Library",
                        "Script screening library seat of " + Libname + " library is running",
@@ -113,7 +113,7 @@ def LibSeatDetect(UN, PW, Libname="ShenZhen",
     SentEmail = False
     failCount = 0
 
-    while (1):
+    while 1:
 
         failCount += 1
         # print('现在' + Libname + '图书馆有预约名额吗？')
@@ -122,12 +122,20 @@ def LibSeatDetect(UN, PW, Libname="ShenZhen",
             date.hour) + ':' + str(
             date.minute) + ':' + str(date.second)
         # print(dateText)
-        if not u"去预约" in drive.page_source:
+        print("\n" + drive.find_element_by_xpath("//span[contains(text()," + textdate + ")]/following-sibling::a").text)
+        print(textdate)
+        if not drive.find_element_by_xpath(
+                "//span[contains(text()," + textdate + ")]/following-sibling::a").text == u"去预约" in drive.page_source:
             pass
             # print('\033[31m没有')
             # print('\033[30m')
         else:
-            #def BeepTimes(times):
+            temp1 = drive.find_element_by_xpath("//span[contains(text()," + textdate + ")]/following-sibling::a").text
+            if temp1 == u'去预约':
+                pass
+            else:
+                continue
+            # def BeepTimes(times):
             #    for _ in range(times):
             #        for _ in range(4):
             #            winsound.Beep(4000,50)
@@ -135,8 +143,8 @@ def LibSeatDetect(UN, PW, Libname="ShenZhen",
 
             # b = Process(target=BeepTimes,args=(5,))
             # b.start()
-            print('\033[32m有空位')
-            print('\033[30m')
+
+            print('\033[32m有空位[30m')
             failCount = 0
             date = datetime.datetime.now()
             dateText = str(date.year) + r'-' + str(date.month) + r'-' + str(date.day) + r'-' + str(
@@ -147,12 +155,23 @@ def LibSeatDetect(UN, PW, Libname="ShenZhen",
             yuyue = drive.find_element_by_css_selector("[class='comment_score gotoyy']")
             drive.execute_script("arguments[0].scrollIntoView();", yuyue)
             yuyue.click()
+            if u"请填写您的健康信息" in drive.page_source:
+                print("准备打勾")
+                drive.find_element_by_xpath(
+                    "/html/body/div[1]/div[2]/div[2]/form/div/div/div/div/div[1]/div[2]/input[2]").click()
+                time.sleep(1)
+                drive.find_element_by_xpath(
+                    "/html/body/div[1]/div[2]/div[2]/form/div/div/div/div/div[2]/div[2]/input[2]").click()
+                known = drive.find_element_by_xpath("//*[@id='c1']")
+                if not known.is_selected():
+                    known.click()
+                drive.find_element_by_class_name("page_btn").click()
             time.sleep(1)
             drive.find_element_by_id("getCheckCode").click()
             if not SentEmail:
                 SentEmail = True
                 try:
-                    sendAnEmail(dateText, Libname)
+                    sendAnEmail(dateText, textdate, Libname)
                 except:
                     print("发送邮件失败，跳过")
                     pass
@@ -170,14 +189,16 @@ def LibSeatDetect(UN, PW, Libname="ShenZhen",
             for i in range(1, 6):
                 time.sleep(1)
                 last_time = 6 - i
-                print('\rNo Seat in ' + Libname + ' library, temporarily stop detection for %s seconds.'% last_time, end="")
+                print('\rNo Seat in ' + Libname + ' library, temporarily stop detection for %s seconds.' % last_time,
+                      end="")
 
         else:
             for i in range(1, 121):
                 time.sleep(1)
                 last_time = 121 - i
-                print('\rNo Seat in ' + Libname + ' library for a long time, temporarily stop detection for %s seconds.' % last_time,
-                      end="")
+                print(
+                    '\rNo Seat in ' + Libname + ' library for a long time, temporarily stop detection for %s seconds.' % last_time,
+                    end="")
             failCount = 0
         drive.refresh()
     time.sleep(1)
@@ -198,12 +219,21 @@ if __name__ == '__main__':
     password = input("请输入密码：")
     print(username)
     print(password)
+    date0 = datetime.datetime.today()
+    [mm, dd] = [date0.month, date0.day]
+    date1 = date0 + datetime.timedelta(days=1)
+    [tmm, tdd] = [date1.month, date1.day]
+    flagdate = int(input("Select date:\n1.today\n2.tomorrow\n"))
+    if flagdate == 1:
+        textdate = "'" + str(mm) + "月" + str(mm) + "日" + "'"
+    else:
+        textdate = "'" + str(tmm) + "月" + str(tdd) + "日" + "'"
     listOfLib = [["ShenZhen",
                   "https://www.szlib.org.cn/m/login.html?formalurl=https%3A%2F%2Fwww.szlib.org.cn%2Fm%2Fmylibrary%2Factivity_appt.jsp%3FcategoryId%3D81"],
                  ["FuTian",
                   "https://www.szlib.org.cn/m/mylibrary/activity_appt.jsp?categoryId=84&wxKey=cs_254293649&code=061SWwmi1f6xJr0x8emi1oQbmi1SWwmy&state=1588213084"]]
-    l1 = Process(target=LibSeatDetect, args=(username, password, 'ShenZhen', listOfLib[0][1]))
-    l2 = Process(target=LibSeatDetect, args=(username, password, 'FuTian', listOfLib[1][1]))
+    l1 = Process(target=LibSeatDetect, args=(username, password, textdate, 'ShenZhen', listOfLib[0][1]))
+    l2 = Process(target=LibSeatDetect, args=(username, password, textdate, 'FuTian', listOfLib[1][1]))
     flag = input('Choose which library:\n1.Shenzhen\n2.FuTian\nPlease Choose:')
     Processes = []
     flag = int(flag)
