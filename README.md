@@ -311,6 +311,3 @@ C:\\Program Files\\Mozilla Firefox
 
 ![](https://mmbiz.qpic.cn/mmbiz_png/ib3l2I9SSrQmqakwDYDOoZLdG30cV1phK2NayENl4Eh19Jibsib52TLzQkRjTibqvibljDOU5eicG87cxbslGtJSBK4g/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
 
--   **GayHub项目地址**（点击原文链接也可以到达）
-
-https://github.com/hantyou/Shenzhen\_Library\_Seat\_Detection
