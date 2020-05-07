@@ -22,8 +22,8 @@ C:\\Program Files\\Mozilla Firefox
 
     2. 需要一些包：
 
-> pip install -i https://mirrors.aliyun.com/pypi/simple/ selenium\
-> pip install -i https://mirrors.aliyun.com/pypi/simple/ win10toast
+> pip install -i https://mirrors.aliyun.com/pypi/simple/ selenium \
+> pip install -i https://mirrors.aliyun.com/pypi/simple/ win10toast
 
     3. 可以写一个.bat文件放桌面上，方便双击执行程序：
 
