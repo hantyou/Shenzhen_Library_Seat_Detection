@@ -100,7 +100,9 @@ def LibSeatDetect(UN, PW, textdate, Libname="ShenZhen",
     drive.find_element_by_name("username").send_keys(name)
     drive.find_element_by_name("password").clear()
     drive.find_element_by_name("password").send_keys(password)
+    time.sleep(1)
     drive.find_element_by_class_name("submit").click()
+    time.sleep(1)
     SentEmail = False
     failCount = 0
     print("开始检测此日期的座位 " + textdate)
@@ -141,7 +143,7 @@ def LibSeatDetect(UN, PW, textdate, Libname="ShenZhen",
                     print(dialog_box.text)
                     dialog_box.accept()
                 except:
-                    LibSeatDetect(UN, PW, textdate, Libname, webSite)
+                    pass
                     break
             """进入预约信息填写界面"""
             drive.find_element_by_id("getCheckCode").click()
@@ -185,6 +187,138 @@ def LibSeatDetect(UN, PW, textdate, Libname="ShenZhen",
     quit()
 
 
+def BaoAnLibDetect(UN, PW, textdate, Libname="BaoAn",
+                   webSite="http://www.balib.cn:8787/mb/activity/myAllActivity"):
+    print(Libname + "图书馆的位置检测已经开始")
+    print("请暂时不要离开，宝安图书馆登陆界面需要自己输入验证码")
+    global VarValue
+    toaster.show_toast("LibDectec Running of " + Libname + "Library",
+                       "Script screening library seat of " + Libname + " library is running",
+                       icon_path=None,
+                       duration=20,
+                       threaded=True)
+    while toaster.notification_active(): time.sleep(0.1)
+    profile_directory = r'C:\\Users\Daniel Zhai\AppData\Roaming\Mozilla\Firefox\Profiles\sgjgzcra.default'
+    # 加载配置配置
+    profile = webdriver.FirefoxProfile(profile_directory)
+    # 启动浏览器配置
+    drive = webdriver.Firefox(profile)
+    drive.get(webSite)
+    url = drive.current_window_handle
+    drive.switch_to.window(url)
+    name = UN
+    password = PW
+    drive.find_element_by_id("login2Url").click()
+    drive.find_element_by_xpath("/html/body/div[1]/div[1]/input").clear()
+    drive.find_element_by_xpath("/html/body/div[1]/div[1]/input").send_keys(name)
+    drive.find_element_by_xpath("/html/body/div[1]/div[2]/input").clear()
+    drive.find_element_by_xpath("/html/body/div[1]/div[2]/input").send_keys(password)
+    drive.find_element_by_xpath("/html/body/div[1]/div[3]/input").clear()
+    while 1:
+        try:
+            varcode = input("请自行查看验证码并输入：")
+            drive.find_element_by_xpath("/html/body/div[1]/div[3]/input").send_keys(varcode)
+            drive.find_element_by_xpath("/html/body/div[1]/a").click()
+            break
+        except:
+            print("验证码错误，重新输入")
+            continue
+    time.sleep(1)
+    drive.find_element_by_xpath("/html/body/ul/li[1]/a/img").click()
+    while 1:
+        try:
+            shouye = drive.find_element_by_xpath(
+                "//span[contains(text()," + textdate + ")]/../../div[2]/span[contains(text(),'区图书馆入馆预约（800人次）')]")
+            break
+        except:
+            TryTime = 20
+            for i in range(1, TryTime + 1):
+                time.sleep(0.999)
+                last_time = TryTime + 1 - i
+                print('\r明天的预约还没开始，%s秒后重试.' % last_time, end="")
+            drive.refresh()
+            continue
+    drive.execute_script("arguments[0].scrollIntoView();", shouye)
+    shouye.click()
+    time.sleep(1)
+    failcount = 0
+    while 1:
+        changci = drive.find_element_by_xpath("/html/body/div[2]/ul/li[2]")
+        drive.execute_script("arguments[0].scrollIntoView();", changci)
+        changci.click()
+        hh = datetime.datetime.today().hour
+        if hh < 10:
+            Morning = drive.find_element_by_xpath("/html/body/div[3]/div[2]/p[3]/span[2]").text
+            M_start = Morning.find(':')
+            M_end = Morning.find("】")
+            M_Num = Morning[M_start + 1:M_end]
+            M_Num = int(M_Num)
+            if M_Num > 0:
+                print("上午有空位")
+                drive.find_element_by_xpath("//*[@id='enterFor']").click()
+                drive.find_element_by_xpath("/html/body/div[8]/div[2]/div/div/div[2]/span[2]").click()
+                drive.find_element_by_xpath("/html/body/div[1]/div[2]/ul/li").click()
+                drive.find_element_by_xpath("//*[@id='material_41']").clear()
+                drive.find_element_by_xpath("//*[@id='material_41']").send_keys("翟沛源")
+                drive.find_element_by_xpath("/html/body/div[1]/div[3]/span/div/input").clear()
+                drive.find_element_by_xpath("/html/body/div[1]/div[3]/span/div/input").send_keys("13058178225")
+                drive.find_element_by_xpath("/html/body/div[2]").click()
+                date = datetime.datetime.now()
+                dateText = str(date.year) + r'-' + str(date.month) + r'-' + str(date.day) + r'-' + str(
+                    date.hour) + ':' + str(
+                    date.minute) + ':' + str(date.second)
+                try:
+                    sendAnEmail(dateText, textdate + '上午', Libname)
+                except:
+                    print("发送邮件失败，跳过")
+                    pass
+                break
+        AfterNoon = drive.find_element_by_xpath("/html/body/div[3]/div[2]/p[4]/span[2]").text
+        A_start = AfterNoon.find(':')
+        A_end = AfterNoon.find("】")
+        A_Num = AfterNoon[A_start + 1:A_end]
+        A_Num = int(A_Num)
+        if A_Num > 0:
+            print("下午有空位")
+            drive.find_element_by_xpath("//*[@id='enterFor']").click()
+            drive.find_element_by_xpath("/html/body/div[8]/div[2]/div/div/div[2]/span[2]").click()
+            drive.find_element_by_xpath("/html/body/div[1]/div[2]/ul/li").click()
+            drive.find_element_by_xpath("//*[@id='material_41']").clear()
+            drive.find_element_by_xpath("//*[@id='material_41']").send_keys("翟沛源")
+            drive.find_element_by_xpath("/html/body/div[1]/div[3]/span/div/input").clear()
+            drive.find_element_by_xpath("/html/body/div[1]/div[3]/span/div/input").send_keys("13058178225")
+            drive.find_element_by_xpath("/html/body/div[2]").click()
+            date = datetime.datetime.now()
+            dateText = str(date.year) + r'-' + str(date.month) + r'-' + str(date.day) + r'-' + str(
+                date.hour) + ':' + str(
+                date.minute) + ':' + str(date.second)
+            try:
+                sendAnEmail(dateText, textdate + '下午', Libname)
+            except:
+                print("发送邮件失败，跳过")
+                pass
+            break
+        failcount += 1
+        print("没有空位")
+        if failCount < 10:
+            refreshInter = 5
+            for i in range(1, refreshInter + 1):
+                time.sleep(0.999)
+                last_time = refreshInter + 1 - i
+                print('\rNo Seat in ' + Libname + ' library, temporarily stop detection for %s seconds.' % last_time,
+                      end="")
+        else:
+            LongStopInter = 120
+            for i in range(1, LongStopInter + 1):
+                time.sleep(0.999)
+                last_time = LongStopInter + 1 - i
+                print(
+                    '\rNo Seat in ' + Libname + ' library for a long time, temporarily stop detection for %s seconds.' % last_time,
+                    end="")
+            failCount = 0
+        drive.refresh()
+
+
 if __name__ == '__main__':
     VarValue = ''
     toaster.show_toast("Python Script Running",
@@ -198,6 +332,7 @@ if __name__ == '__main__':
     print(username)
     print(password)
     date0 = datetime.datetime.today()
+    hh = date0.hour
     [mm, dd] = [date0.month, date0.day]
     date1 = date0 + datetime.timedelta(days=1)
     [tmm, tdd] = [date1.month, date1.day]
@@ -205,8 +340,10 @@ if __name__ == '__main__':
     listOfLib = [["ShenZhen",
                   "https://www.szlib.org.cn/m/login.html?formalurl=https%3A%2F%2Fwww.szlib.org.cn%2Fm%2Fmylibrary%2Factivity_appt.jsp%3FcategoryId%3D81"],
                  ["FuTian",
-                  "https://www.szlib.org.cn/m/mylibrary/activity_appt.jsp?categoryId=84&wxKey=cs_254293649&code=061SWwmi1f6xJr0x8emi1oQbmi1SWwmy&state=1588213084"]]
-    flag = input('Choose which library:\n1.Shenzhen\n2.FuTian\nPlease Choose:')
+                  "https://www.szlib.org.cn/m/mylibrary/activity_appt.jsp?categoryId=84&wxKey=cs_254293649&code=061SWwmi1f6xJr0x8emi1oQbmi1SWwmy&state=1588213084"],
+                 ["BaoAn",
+                  "http://www.balib.cn:8787/mb/activity/myAllActivity"]]
+    flag = input('Choose which library:\n1.Shenzhen\n2.FuTian\n3.BaoAn\nPlease Choose:')
     flag = int(flag)
     if flag == 1:
         if flagdate == 1:
@@ -218,6 +355,24 @@ if __name__ == '__main__':
             textdate = "'" + str(mm) + "-" + str(dd) + "'"
         else:
             textdate = "'" + str(tmm) + "-" + str(tdd) + "'"
+    if flag == 3:
+        dstr = str(dd)
+        tdstr = str(tdd)
+        if dd < 10:
+            dstr = "0" + str(dd)
+        if tdd < 10:
+            tdstr = "0" + str(tdd)
+        if flagdate == 1:
+            textdate = "'" + str(mm) + "月" + dstr + "日" + "'"
+        else:
+            textdate = "'" + str(tmm) + "月" + tdstr + "日" + "'"
+        if hh < 18 and flagdate == 2:
+            trans = input("宝安图书馆明天的预约还没开始，是否要自动转换成今天的？\n1.是   2.否\n")
+            if trans == 1:
+                textdate = "'" + str(mm) + "月" + dstr + "日" + "'"
+                print("已转换为今天的预约")
+            else:
+                print("仍然检测明天的预约")
 
     l1 = Process(target=LibSeatDetect, args=(username, password, textdate, 'ShenZhen', listOfLib[0][1]))
     l2 = Process(target=LibSeatDetect, args=(username, password, textdate, 'FuTian', listOfLib[1][1]))
@@ -226,6 +381,12 @@ if __name__ == '__main__':
         Processes.append(l1)
     if flag == 2:
         Processes.append(l2)
+    if flag == 3:
+        BaoAnLibDetect(username, password, textdate, 'BaoAn', listOfLib[2][1])
+    if flag is not 3:
+        for l in Processes:
+            l.start()
+            l.join()
     for l in Processes:
         l.start()
         l.join()
